@@ -1,0 +1,7 @@
+# Keep repository clean; distribute EXE via GitHub Releases only
+build/
+dist/
+__pycache__/
+*.py[cod]
+*.log
+config.py

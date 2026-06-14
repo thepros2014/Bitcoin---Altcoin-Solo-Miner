@@ -1,6 +1,6 @@
 # profit_engine/calculator.py
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from models import ProfitData, MinerConfig
@@ -8,6 +8,10 @@ from pools.nicehash import NiceHashPool
 from pools.miningpoolhub import MiningPoolHubPool
 from pools.zpool import ZPool
 import statistics
+import logging
+from config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class ProfitCalculator:
@@ -39,7 +43,7 @@ class ProfitCalculator:
         for i, (pool_name, _) in enumerate(self.pools.items()):
             result = results[i]
             if isinstance(result, Exception):
-                print(f"Error getting profits from {pool_name}: {result}")
+                logger.exception("Error getting profits from %s: %s", pool_name, result)
             else:
                 all_profits.extend(result)
 
@@ -50,17 +54,17 @@ class ProfitCalculator:
         try:
             return await pool.get_profitability()
         except Exception as e:
-            print(f"Error getting profits from {pool_name}: {e}")
+            logger.exception("Error getting profits from %s: %s", pool_name, e)
             return []
 
-    def get_profitability_stats(self, profits: List[ProfitData]) -> Dict[str, float]:
+    async def get_profitability_stats(self, profits: List[ProfitData]) -> Dict[str, float]:
         """Calculate statistics from profitability data (CPU-intensive)"""
         if not profits:
             return {}
 
         # Use thread pool for CPU-intensive calculations
-        loop = asyncio.get_event_loop()
-        return loop.run_in_executor(
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
             self._thread_pool,
             self._calculate_profitability_stats,
             profits
@@ -97,17 +101,35 @@ class ProfitCalculator:
 
         return stats
 
-    def get_best_profitability(self, profits: List[ProfitData]) -> Optional[ProfitData]:
-        """Get the highest profitability entry"""
-        if not profits:
-            return None
-        return max(profits, key=lambda p: p.profitability)
-
-    def filter_profitable_coins(self, profits: List[ProfitData], min_profitability: float) -> List[ProfitData]:
-        """Filter coins by minimum profitability threshold"""
+    def apply_fee_to_profits(self, profits: List[ProfitData], fee_percent: Optional[float] = None) -> List[ProfitData]:
+        """Return profitability data after applying convenience fee."""
         if not profits:
             return []
-        return [p for p in profits if p.profitability >= min_profitability]
+        fee = settings.convenience_fee if fee_percent is None else fee_percent
+        net_multiplier = max(0.0, 1.0 - fee)
+        return [
+            p.model_copy(update={"profitability": p.profitability * net_multiplier})
+            for p in profits
+        ]
+
+    def get_best_profitability(self, profits: List[ProfitData], apply_fee: bool = True) -> Optional[ProfitData]:
+        """Get the highest profitability entry; applies configured fee by default."""
+        if not profits:
+            return None
+        candidate_profits = self.apply_fee_to_profits(profits) if apply_fee else profits
+        return max(candidate_profits, key=lambda p: p.profitability)
+
+    def filter_profitable_coins(
+        self,
+        profits: List[ProfitData],
+        min_profitability: float,
+        apply_fee: bool = True
+    ) -> List[ProfitData]:
+        """Filter coins by minimum profitability threshold; applies configured fee by default."""
+        if not profits:
+            return []
+        candidate_profits = self.apply_fee_to_profits(profits) if apply_fee else profits
+        return [p for p in candidate_profits if p.profitability >= min_profitability]
 
     def cleanup(self):
         """Cleanup resources"""

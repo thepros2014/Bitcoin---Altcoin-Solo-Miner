@@ -82,10 +82,14 @@ async def get_miner(miner_id: str):
 
 @app.get("/profitability")
 async def get_profitability():
-    """Get current profitability from all pools"""
+    """Get current profitability from all pools (net after convenience fee)."""
     try:
         profits = await profit_calculator.get_all_profits()
-        return profits
+        net_profits = profit_calculator.apply_fee_to_profits(profits)
+        return {
+            "fee_percent": settings.convenience_fee,
+            "profits": net_profits
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -95,7 +99,7 @@ async def get_profitability_stats():
     """Get profitability statistics"""
     try:
         profits = await profit_calculator.get_all_profits()
-        stats = profit_calculator.get_profitability_stats(profits)
+        stats = await profit_calculator.get_profitability_stats(profits)
         return stats
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -103,13 +107,20 @@ async def get_profitability_stats():
 
 @app.get("/profitability/best")
 async def get_best_profitability():
-    """Get the best profitability opportunity"""
+    """Get the best profitability opportunity (net after convenience fee)."""
     try:
         profits = await profit_calculator.get_all_profits()
-        best = profit_calculator.get_best_profitability(profits)
+        best = profit_calculator.get_best_profitability(profits, apply_fee=True)
         if best:
-            return best
-        return {"message": "No profitability data available"}
+            return {
+                "fee_percent": settings.convenience_fee,
+                "best": best
+            }
+        return {
+            "message": "No profitability data available",
+            "fee_percent": settings.convenience_fee,
+            "best": None
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -132,7 +143,9 @@ async def get_switch_recommendation(miner_id: str):
                 recommendation = await profit_switcher.should_switch(
                     miner, current_profit, best_profit.profitability
                 )
-                return recommendation
+                recommendation_dict = recommendation.model_dump()
+                recommendation_dict["fee_percent"] = settings.convenience_fee
+                return recommendation_dict
         return None
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
