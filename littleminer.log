@@ -1,0 +1,27 @@
+2026-06-13 14:41:34,195 - __main__ - INFO - Starting LittleMiner application
+2026-06-13 14:41:35,396 - __main__ - ERROR - Application error: 'await' outside async function (calculator.py, line 63)
+Traceback (most recent call last):
+  File "C:\Users\plumb\OneDrive\Documents\miner\entry_point.py", line 34, in main
+    from main import app, settings
+  File "C:\Users\plumb\OneDrive\Documents\miner\main.py", line 18, in <module>
+    from profit_engine.calculator import ProfitCalculator
+  File "C:\Users\plumb\OneDrive\Documents\miner\profit_engine\calculator.py", line 63
+    return await loop.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SyntaxError: 'await' outside async function
+2026-06-13 14:41:35,398 - __main__ - INFO - LittleMiner application stopped
+2026-06-13 14:43:37,132 - __main__ - INFO - Starting LittleMiner application
+2026-06-13 14:43:37,849 - __main__ - ERROR - Application error: Can't instantiate abstract class NiceHashPool without an implementation for abstract methods 'get_balance', 'submit_hashrate'
+Traceback (most recent call last):
+  File "C:\Users\plumb\OneDrive\Documents\miner\entry_point.py", line 34, in main
+    from main import app, settings
+  File "C:\Users\plumb\OneDrive\Documents\miner\main.py", line 33, in <module>
+    profit_calculator = ProfitCalculator()
+  File "C:\Users\plumb\OneDrive\Documents\miner\profit_engine\calculator.py", line 18, in __init__
+    "nicehash": NiceHashPool(),
+                ~~~~~~~~~~~~^^
+TypeError: Can't instantiate abstract class NiceHashPool without an implementation for abstract methods 'get_balance', 'submit_hashrate'
+2026-06-13 14:43:37,852 - __main__ - INFO - LittleMiner application stopped
+2026-06-13 14:49:27,205 - __main__ - INFO - Starting LittleMiner application
+2026-06-13 14:49:28,018 - __main__ - INFO - Starting server on 0.0.0.0:8000
+2026-06-13 14:49:28,072 - main - INFO - Starting LittleMiner API

@@ -1,0 +1,18 @@
+        # Calculate based on hashrate
+        
+        btc_per_day = hashrate * best_coin.profitability
+        btc_earned = btc_per_day * (hours / 24)
+        
+        # Apply fee (2%)
+        btc_after_fee = btc_earned * (1 - 0.02)
+        
+        # Estimate USD value (would need price feed)
+        usd_value = btc_after_fee * 30000  # Approximate BTC price
+        
+        return {
+            "btc_gross": btc_earned,
+            "btc_net": btc_after_fee,
+            "usd_approx": usd_value,
+            "coin": best_coin.coin,
+            "pool": best_coin.pool,
+        }
